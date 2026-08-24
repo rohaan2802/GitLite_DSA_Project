@@ -1,95 +1,112 @@
 # GitLite_DSA_Project
 
-**GitLite** — a mini Git-inspired console tool that stores repository data in **AVL** or **Red-Black** trees, with each node backed by a text file on disk. Course DSA project by Mohammad Rohaan (22I-2327), Ali Bin Salman (22I-0894), and M. Bilal Baig (22I-0819). Spec PDF: `GITLite- Data Structure.pdf`.
+Mini **Git-inspired** console tool: repository data in an **AVL** or **Red-Black** tree, each node persisted as a **`.txt` file** on disk so large trees need not stay fully in RAM.
 
-## Overview
+**Team:** Mohammad Rohaan (22I-2327), Ali Bin Salman (22I-0894), M. Bilal Baig (22I-0819)  
+**Spec:** `GITLite- Data Structure.pdf` · Solution: `DSA_Project.sln`  
+[rohaan2802](https://github.com/rohaan2802)
 
-Instead of Git objects, GitLite:
+---
 
-1. Reads a tabular input file (e.g. `book1.csv`) and a selected key column  
-2. Builds an **AVL** or **Red-Black** tree (`init AVL` / `init RED-BLACK`)  
-3. Maps **branches** to folders under `Branches/` / `Main_Folder/`  
-4. Persists each tree node as `folder\key.txt` with row + parent/child metadata  
-5. Accepts Git-like commands: `branch`, `checkout`, `commit add|update|delete`, `merge`, `log`, `save`, `load`, etc.
+## Table of contents
 
-This keeps large trees out of RAM by loading node files on demand (`Node::create_node_text_file`).
+1. [Idea](#idea)
+2. [Headers](#headers)
+3. [Commands](#commands)
+4. [Folders on disk](#folders-on-disk)
+5. [File_Reader helpers](#file_reader-helpers)
+6. [Build and usage](#build-and-usage)
 
-## Features
+---
 
-- Tree backends: **AVL** (`AVL_TREE.h`) and **Red-Black** (`Red_Black.h`) sharing `Node.h`  
-- File helpers & CLI parsing in `File_Reader.h` (`get_command`, `tree_menu`, `save_repository`, `load_repo`, merge, history)  
-- Commands (see `display_commands_syntax()` / `help`):
+## Idea
+
+1. Read a tabular file (e.g. `book1.csv`) and a **key column**.  
+2. `init AVL` or `init RED-BLACK`.  
+3. **Branches** = folders under `Branches/` / `Main_Folder/`.  
+4. Each tree node → `folder\key.txt` with row payload + parent/child metadata (`Node::create_node_text_file`).  
+5. Git-like commands: branch, checkout, commit add/update/delete, merge, log, save, load.
+
+`init B` (B-tree) may be stubbed — see spec vs `File_Reader.h`.
+
+---
+
+## Headers
+
+| File | Role |
+|------|------|
+| `Node.h` | Node + per-node text files |
+| `AVL_TREE.h` | AVL insert/delete/balance |
+| `Red_Black.h` | RB insert/delete/colors |
+| `File_Reader.h` | CLI, FS walks (`std::filesystem`), menus, save/load, merge |
+| `main.cpp` | Command loop |
+
+Custom `str_len` / `str_cpy` / `i_to_s` in `File_Reader.h` (C-string helpers). Windows console: maximize, font size helpers (`max_win_size`).
+
+---
+
+## Commands
+
+(`display_commands_syntax()` / `help`)
 
 | Command | Action |
 |---------|--------|
-| `init AVL` / `init RED-BLACK` | Choose tree type |
-| `branch <name>` | Create branch folder + copy |
+| `init AVL` / `init RED-BLACK` | Tree backend |
+| `branch <name>` | New branch folder + copy |
 | `checkout <name>` | Switch active branch |
 | `commit add` | Insert node |
 | `commit update` | Update node |
 | `commit delete` | Delete node |
-| `branches` | List branches |
-| `delete-branch <name>` | Remove branch (not if active) |
+| `branches` | List |
+| `delete-branch <name>` | Remove (not if active) |
 | `merge <src> <dst>` | Merge branch folders |
-| `visualize-tree <name>` | Rebuild/print tree view |
-| `log` | Show `commit_history.txt` |
-| `current-branch` | Print active branch |
-| `save` | Write `saved_Repo/repo_data.txt` |
-| `load <name>` | Load saved repo data |
-| `help` | Print syntax |
+| `visualize-tree <name>` | Rebuild/print view |
+| `log` | `commit_history.txt` (`commit_history_display_function` concatenates `folder/commit_history.txt`) |
+| `current-branch` | Print active |
+| `save` | `saved_Repo/repo_data.txt` |
+| `load <name>` | Restore |
+| `help` | Syntax |
 
-- Sample data: `book1.csv`, folders `f1`–`f4`, `Main_Folder`, `Branches`, `saved_Repo`  
-- Console UX helpers: maximized window, custom font size  
+---
 
-## Tech stack
+## Folders on disk
 
-| Component | Technology |
-|-----------|------------|
-| Language | C++ |
-| Structures | AVL, Red-Black trees |
-| FS | `<filesystem>`-style directory walks in `File_Reader.h` |
-| IDE | `DSA_Project.sln` |
-
-## Project structure
-
-```
+```text
 GitLite_DSA_Project/
-├── main.cpp                 # Command loop
-├── Node.h                   # Tree node + per-node .txt files
-├── AVL_TREE.h
-├── Red_Black.h
-├── File_Reader.h            # I/O, menus, GitLite commands
+├── main.cpp  Node.h  AVL_TREE.h  Red_Black.h  File_Reader.h
 ├── book1.csv
-├── Main_Folder/             # Default branch content (*.txt nodes)
-├── Branches/                # branches.txt + branch folders
-├── saved_Repo/              # Saved repository snapshot
-├── f1 … f4                  # Extra sample folders
+├── Main_Folder/          # default branch node files
+├── Branches/             # branches.txt + per-branch dirs
+├── saved_Repo/
+├── f1 … f4               # extra samples
 ├── GITLite- Data Structure.pdf
-└── DSA_Project.sln / .vcxproj
+└── DSA_Project.sln
 ```
 
-## How to build / run
+---
 
-1. Open `DSA_Project.sln` in Visual Studio.  
-2. Build (C++17 recommended for filesystem APIs used in headers).  
-3. Run with working directory = project root so `Main_Folder`, `Branches`, and CSV paths resolve.
+## File_Reader helpers
 
-## Usage
+- `get_command`, `tree_menu`, `save_repository`, `load_repo`  
+- Merge + history  
+- `commit_history_display_function(folder_name)` reads `/commit_history.txt` under that folder  
 
-1. Start the app → enter/select input file name (CSV).  
-2. Choose tree via `init AVL` or `init RED-BLACK` (menu-driven).  
-3. Select the column used as the tree key.  
-4. Issue commands at the prompt (`commit add`, `branch feature`, `checkout feature`, `visualize-tree Main_Folder`, `log`, `save`, …).  
-5. Inspect generated `.txt` node files under the active branch folder and `commit_history.txt`.
+C++17 filesystem recommended.
 
-## How to extend / modify
+---
 
-- Complete B-tree path if `init B` stub should be fully supported.  
-- Improve merge conflict handling between node files.  
-- Add hashing or diff output for “commit” semantics closer to real Git.  
-- Cross-platform: replace Windows console font/`max_win_size` helpers as needed.
+## Build and usage
+
+1. Open `DSA_Project.sln` (VS).  
+2. Working directory = project root (`Main_Folder`, CSV paths).  
+3. Enter CSV name → `init AVL` or `init RED-BLACK` → pick key column.  
+4. Issue commands; inspect `.txt` nodes and `commit_history.txt`.
+
+**Extend:** finish B-tree; better merge conflicts; hashes/diffs closer to Git; portable console (drop Win32 font hacks).
+
+---
 
 ## Author
 
 **Mohammad Rohaan (22I-2327)** · Ali Bin Salman (22I-0894) · M. Bilal Baig (22I-0819)  
-GitHub: [rohaan2802](https://github.com/rohaan2802)
+[rohaan2802](https://github.com/rohaan2802)
